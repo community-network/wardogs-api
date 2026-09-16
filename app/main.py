@@ -14,7 +14,7 @@ from app.api.steam_login import (
     get_queue_token,
 )
 from app.database.connection import DatabaseSingleton
-from app.database.functions import wardogs_account
+from app.database.functions import discord_user, stats_snapshot, wardogs_account
 from config import LogConfig, load_config
 
 dictConfig(LogConfig().model_dump())
@@ -131,25 +131,27 @@ async def callback(
 
             stats = decode_player_stats(player_data)
 
-            account_id = await wardogs_account.get_or_create(
+            account = await wardogs_account.get_or_create(
                 session, steam_id=str(steam_id)
             )
 
-            snapshot_id = save_snapshot(
-                account_id=account_id,
+            snapshot = await stats_snapshot.create(
+                session,
+                account_id=account.id,
                 stats=stats,
             )
 
             if state_info is not None:
-                link_discord_user(
-                    discord_id=state_info["discord_id"],
-                    account_id=account_id,
+                await discord_user.upsert(
+                    session,
+                    state_info["discord_id"],
+                    account.id,
                 )
 
                 print(
-                    f"[OK] Discord {state_info['discord_id']} linked to account {account_id}"
+                    f"[OK] Discord {state_info['discord_id']} linked to account {account.id}"
                 )
-            print(f"[OK] Snapshot {snapshot_id} saved")
+            print(f"[OK] Snapshot {snapshot.id} saved")
 
             return f"""
             <!doctype html>
@@ -188,28 +190,28 @@ async def callback(
             </html>
             """
 
-        except Exception as exc:
-            print(f"[ERROR] Web update failed: {type(exc).__name__}: {exc}")
+    except Exception as exc:
+        print(f"[ERROR] Web update failed: {type(exc).__name__}: {exc}")
 
-            return (
-                """
-            <!doctype html>
-            <html>
-            <head>
-                <title>WARDOGS Update Failed</title>
-            </head>
-            <body>
-                <h2>WARDOGS stats update failed</h2>
+        return (
+            """
+        <!doctype html>
+        <html>
+        <head>
+            <title>WARDOGS Update Failed</title>
+        </head>
+        <body>
+            <h2>WARDOGS stats update failed</h2>
 
-                <p>
-                    No account changes were made.
-                    Return to Discord and try again.
-                </p>
-            </body>
-            </html>
-            """,
-                500,
-            )
+            <p>
+                No account changes were made.
+                Return to Discord and try again.
+            </p>
+        </body>
+        </html>
+        """,
+            500,
+        )
 
     finally:
         game_token = None
