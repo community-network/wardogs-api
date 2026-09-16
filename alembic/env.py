@@ -12,7 +12,7 @@ from app.database.dto import (  # noqa: F401
 )
 
 # add db items to autogenerate the migrations
-from config import load_config
+from app.config import load_config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

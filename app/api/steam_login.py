@@ -4,7 +4,7 @@ import json
 import requests
 
 from app.api.wardogs_models import PlayerStats, RoleStats, UnlockInfo
-from config import Api
+from app.config import Api
 
 
 def get_queue_token(game_host):

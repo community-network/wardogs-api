@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 from app.utils.meta_singleton import MetaSingleton
 
-from config import Db
+from app.config import Db
 
 
 class Base(AsyncAttrs, DeclarativeBase):
