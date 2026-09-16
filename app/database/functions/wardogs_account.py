@@ -1,4 +1,4 @@
-from database.dto.wardogs_account import WardogAccount
+from app.database.dto.wardogs_account import WardogAccount
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError

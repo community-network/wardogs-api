@@ -2,14 +2,14 @@ import base64
 import json
 
 import requests
-from main import env_config
 
 from app.api.wardogs_models import PlayerStats, RoleStats, UnlockInfo
+from config import Api
 
 
-def get_queue_token():
+def get_queue_token(game_host):
     response = requests.post(
-        f"{env_config.api.game_host}/v1/loginqueue/getinqueuev1",
+        f"{game_host}/v1/loginqueue/getinqueuev1",
         json={},
         timeout=20,
     )
@@ -29,6 +29,7 @@ def get_queue_token():
 
 
 def authenticate_with_openid(
+    api_config: Api,
     provider_token,
     queue_token,
 ):
@@ -38,14 +39,14 @@ def authenticate_with_openid(
             provider_token,
             separators=(",", ":"),
         ),
-        "gameShardId": env_config.api.game_shard_id,
+        "gameShardId": api_config.game_shard_id,
         "loginQueuePassToken": queue_token,
     }
 
     # Keep this request identical to the version
     # proven to work in steam_web_test.py.
     response = requests.post(
-        (f"{env_config.api.social_host}/v1/account/authenticateorcreatev2"),
+        (f"{api_config.social_host}/v1/account/authenticateorcreatev2"),
         json=payload,
         timeout=30,
     )
@@ -70,7 +71,7 @@ def authenticate_with_openid(
     return game_token
 
 
-def get_player_data(game_token):
+def get_player_data(game_host, game_token):
     payload = {
         "requestId": 1,
         "type": "PlayerDataServiceRpc.GetV1Request",
@@ -78,7 +79,7 @@ def get_player_data(game_token):
     }
 
     response = requests.post(
-        f"{env_config.api.game_host}/v1/rpc",
+        f"{game_host}/v1/rpc",
         json=payload,
         headers={
             "Authorization": f"Bearer {game_token}",

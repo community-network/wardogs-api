@@ -120,14 +120,15 @@ async def callback(
             print()
             print(f"[WEB] Updating Steam account {steam_id}")
 
-            queue_token = get_queue_token()
+            queue_token = get_queue_token(env_config.api.game_host)
 
             game_token = authenticate_with_openid(
+                env_config.api,
                 provider_token,
                 queue_token,
             )
 
-            player_data = get_player_data(game_token)
+            player_data = get_player_data(env_config.api.game_host, game_token)
 
             stats = decode_player_stats(player_data)
 
