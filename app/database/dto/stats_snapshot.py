@@ -1,14 +1,16 @@
 import datetime
 
 from database.connection import Base
-from sqlalchemy import BigInteger, DateTime, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class StatsSnapshot(Base):
     __tablename__ = "stats_snapshots"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    account_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("wardog_accounts.id", ondelete="cascade"), nullable=False
+    )
     player_data_version: Mapped[int | None] = mapped_column(BigInteger)
 
     wardog_level: Mapped[int] = mapped_column(BigInteger)
