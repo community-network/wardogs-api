@@ -1,6 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass
+import sys
 
 from environs import Env
 from pydantic import BaseModel
