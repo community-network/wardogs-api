@@ -13,7 +13,7 @@ WORKDIR /code
 COPY --from=requirements-stage /tmp/requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY ./app /code/app
+COPY . .
 # COPY --chmod=755 ./healthcheck.sh /code/healthcheck.sh
 
 # HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \

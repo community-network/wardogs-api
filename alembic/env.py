@@ -3,6 +3,9 @@ from logging.config import fileConfig
 from sqlalchemy import URL, engine_from_config, pool
 
 from alembic import context
+
+# add db items to autogenerate the migrations
+from app.config import load_config
 from app.database import connection
 from app.database.dto import (  # noqa: F401
     discord_user,
@@ -10,9 +13,6 @@ from app.database.dto import (  # noqa: F401
     unlock,
     wardogs_account,
 )
-
-# add db items to autogenerate the migrations
-from app.config import load_config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
