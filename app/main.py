@@ -1,8 +1,9 @@
 from urllib.parse import urlencode
 
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import RedirectResponse
-
+import jwt
+from pydantic import create_model
 from app.api.steam_login import (
     authenticate_with_openid,
     decode_player_stats,
@@ -20,19 +21,11 @@ env_config = load_config()
 def login(
     state: str | None = Query(
         None,
-        description="Name of the server you want to search for",
-        examples=["BoB"],
+        description="Token containing the discord connection",
     ),
 ):
-    state = request.args.get("state", "")
-
-    pending = _get_pending_state(state)
-
-    if pending is None:
-        return (
-            "<h2>This WARDOGS update link is invalid or has expired.</h2>",
-            400,
-        )
+    if state is not None:
+        state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
 
     callback = f"{env_config.api.auth_base_url}/callback?" + urlencode({"state": state})
 
@@ -49,16 +42,15 @@ def login(
 
 
 @app.get("/callback")
-def callback():
-    state = request.args.get("state", "")
-
-    pending = _get_pending_state(state)
-
-    if pending is None:
-        return (
-            "<h2>This WARDOGS update request is invalid or has expired.</h2>",
-            400,
-        )
+def callback(
+    request: Request,
+    state: str | None = Query(
+        None,
+        description="Token containing the discord connection",
+    ),
+):
+    if state is not None:
+        state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
 
     required = [
         "openid.claimed_id",
@@ -73,13 +65,13 @@ def callback():
         "openid.sig",
     ]
 
-    if any(name not in request.args for name in required):
+    if any(name not in request.query_params for name in required):
         return (
             "<h2>Steam returned an incomplete authentication response.</h2>",
             400,
         )
 
-    claimed_id = request.args["openid.claimed_id"]
+    claimed_id = request.query_params["openid.claimed_id"]
 
     steam_id = claimed_id.rstrip("/").split("/")[-1]
 
@@ -87,16 +79,16 @@ def callback():
         return "<h2>Invalid Steam account.</h2>", 400
 
     provider_token = {
-        "claimedId": request.args["openid.claimed_id"],
-        "ns": request.args["openid.ns"],
-        "mode": request.args["openid.mode"],
-        "opEndpoint": request.args["openid.op_endpoint"],
-        "identity": request.args["openid.identity"],
-        "returnTo": request.args["openid.return_to"],
-        "responseNonce": request.args["openid.response_nonce"],
-        "assocHandle": request.args["openid.assoc_handle"],
-        "signed": request.args["openid.signed"],
-        "sig": request.args["openid.sig"],
+        "claimedId": request.query_params["openid.claimed_id"],
+        "ns": request.query_params["openid.ns"],
+        "mode": request.query_params["openid.mode"],
+        "opEndpoint": request.query_params["openid.op_endpoint"],
+        "identity": request.query_params["openid.identity"],
+        "returnTo": request.query_params["openid.return_to"],
+        "responseNonce": request.query_params["openid.response_nonce"],
+        "assocHandle": request.query_params["openid.assoc_handle"],
+        "signed": request.query_params["openid.signed"],
+        "sig": request.query_params["openid.sig"],
     }
 
     game_token = None
