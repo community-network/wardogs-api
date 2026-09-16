@@ -15,11 +15,12 @@ from app.api.steam_login import (
 )
 from app.database.connection import DatabaseSingleton
 from app.database.functions import discord_user, stats_snapshot, wardogs_account
-from config import LogConfig, load_config
+from config import LogConfig, PackagePathFilter, load_config
 
 dictConfig(LogConfig().model_dump())
 
 logger = logging.getLogger("api")
+logger.addFilter(PackagePathFilter())
 
 env_config = load_config()
 
