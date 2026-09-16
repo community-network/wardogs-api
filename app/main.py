@@ -47,12 +47,12 @@ async def read_root():
 
 @app.get("/login")
 def login(
-    state: str | None = Query(
-        None,
+    state: str = Query(
+        "",
         description="Token containing the discord connection",
     ),
 ):
-    if state is not None:
+    if state != "":
         state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
 
     callback = f"{env_config.api.auth_base_url}/callback?" + urlencode({"state": state})
@@ -72,13 +72,13 @@ def login(
 @app.get("/callback")
 async def callback(
     request: Request,
-    state: str | None = Query(
-        None,
+    state: str = Query(
+        "",
         description="Token containing the discord connection",
     ),
 ):
     state_info = None
-    if state is not None:
+    if state != "":
         state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
 
     required = [
