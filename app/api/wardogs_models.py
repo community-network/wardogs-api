@@ -8,7 +8,7 @@ class RoleStats:
 
 
 @dataclass
-class Unlock:
+class UnlockInfo:
     node_id: str
     level: int
 
@@ -27,7 +27,7 @@ class PlayerStats:
     cash: int = 0
     gold: int = 0
 
-    unlocks: list[Unlock] = field(default_factory=list)
+    unlocks: list[UnlockInfo] = field(default_factory=list)
 
     @property
     def wardog_level(self) -> int:

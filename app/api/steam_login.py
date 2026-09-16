@@ -4,7 +4,7 @@ import json
 import requests
 from main import env_config
 
-from app.api.wardogs_models import PlayerStats, RoleStats, Unlock
+from app.api.wardogs_models import PlayerStats, RoleStats, UnlockInfo
 
 
 def get_queue_token():
@@ -167,7 +167,7 @@ def decode_player_stats(data):
                     level = 1
 
                 stats.unlocks.append(
-                    Unlock(
+                    UnlockInfo(
                         node_id=str(node_id),
                         level=level,
                     )
