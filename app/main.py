@@ -39,6 +39,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+@app.get("/", include_in_schema=False)
+async def read_root():
+    response = RedirectResponse(url="/docs")
+    return response
+
+
 @app.get("/login")
 def login(
     state: str | None = Query(
