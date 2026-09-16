@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-from utils.meta_singleton import MetaSingleton
+from app.utils.meta_singleton import MetaSingleton
 
 from config import Db
 
