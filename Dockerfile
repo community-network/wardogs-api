@@ -19,4 +19,4 @@ COPY ./app /code/app
 # HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
     # CMD ./healthcheck.sh
 # CMD uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1
-CMD fastapi run app/main.py --port 8080
+CMD alembic upgrade head && fastapi run app/main.py --port 8080
