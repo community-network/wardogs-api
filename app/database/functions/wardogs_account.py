@@ -12,7 +12,7 @@ async def get_or_create(
     social_id: str | None = None,
     display_name: str | None = None,
     discriminator: str | None = None,
-) -> WardogAccount | None:
+) -> WardogAccount:
     stmt = select(WardogAccount).filter(WardogAccount.steam_id == steam_id).limit(1)
     result = await session.execute(stmt)
     res = result.scalar_one_or_none()
@@ -25,9 +25,8 @@ async def get_or_create(
             "discriminator": discriminator,
         }
         stmt = insert(WardogAccount).values(channel).returning(WardogAccount)
-        try:
-            result = await session.execute(stmt)
-            await session.commit()
-            return result.scalar_one()
-        except IntegrityError:
-            pass
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.scalar_one()
+    else:
+        return res

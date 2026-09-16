@@ -32,13 +32,10 @@ async def create(
         "gold": stats.gold,
     }
     stmt = insert(StatsSnapshot).values(channel).returning(StatsSnapshot)
-    try:
-        result = await session.execute(stmt)
-        await session.commit()
+    result = await session.execute(stmt)
+    await session.commit()
 
-        for unlock in stats.unlocks:
-            await unlocks.upsert(session, account_id, unlock)
+    for unlock in stats.unlocks:
+        await unlocks.upsert(session, account_id, unlock)
 
-        return result.scalar_one()
-    except IntegrityError:
-        pass
+    return result.scalar_one()
