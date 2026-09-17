@@ -18,9 +18,9 @@ async def upsert(
     }
     stmt = insert(DiscordUser).values(data)
     do_update_stmt = stmt.on_conflict_do_update(
-        index_elements=[DiscordUser.account_id],
+        index_elements=[DiscordUser.account_id, DiscordUser.discord_id],
         set_={k: v for (k, v) in data.items() if k != "created_at"},
-    )
+    ).returning(DiscordUser)
     try:
         result = await session.execute(do_update_stmt)
         await session.commit()

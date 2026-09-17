@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base
@@ -30,6 +30,7 @@ class WardogAccount(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    __table_args__ = (UniqueConstraint("steam_id", name="uix_steam_id"),)
 
 
 class Unlock(Base):
@@ -52,6 +53,9 @@ class Unlock(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    __table_args__ = (
+        UniqueConstraint("account_id", "node_id", name="uix_account_id_node_id"),
+    )
 
 
 class DiscordUser(Base):
@@ -59,7 +63,9 @@ class DiscordUser(Base):
     discord_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     display_name: Mapped[str | None] = mapped_column(nullable=True)
     account_id: Mapped[int] = mapped_column(
-        ForeignKey("wardog_accounts.id", ondelete="cascade"), nullable=False
+        ForeignKey("wardog_accounts.id", ondelete="cascade"),
+        nullable=False,
+        primary_key=True,
     )
     account: Mapped["WardogAccount"] = relationship(
         "WardogAccount", back_populates="discord_users"
@@ -69,6 +75,9 @@ class DiscordUser(Base):
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    __table_args__ = (
+        UniqueConstraint("account_id", "discord_id", name="uix_account_id_discord_id"),
     )
 
 

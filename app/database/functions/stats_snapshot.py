@@ -2,7 +2,7 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.wardogs_models import PlayerStats, RoleStats
-from app.database.dto import StatsSnapshot, WardogAccount
+from app.database.dto import StatsSnapshot, WardogAccount, DiscordUser
 from app.database.functions import unlocks
 
 
@@ -18,7 +18,7 @@ async def get_latest(
     elif steam_id is not None:
         stmt = stmt.filter(WardogAccount.steam_id == str(steam_id))
     elif discord_id is not None:
-        pass
+        stmt = stmt.filter(DiscordUser.discord_id == discord_id)
     stmt = stmt.order_by(StatsSnapshot.id.desc()).limit(1)
     result = await session.execute(stmt)
     res = result.scalar_one_or_none()
