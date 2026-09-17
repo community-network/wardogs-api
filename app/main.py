@@ -13,6 +13,7 @@ from app.api.steam_login import (
     get_player_data,
     get_queue_token,
 )
+from app.api import steam_web_api
 from app.database.connection import DatabaseSingleton
 from app.database.functions import discord_user, stats_snapshot, wardogs_account
 from app.config import LogConfig, PackagePathFilter, load_config
@@ -139,8 +140,14 @@ async def callback(
 
             stats = decode_player_stats(player_data)
 
+            steam_user_info = await steam_web_api.get_player_summaries(
+                env_config.api.steam_web_api_key, steam_id
+            )
+
             account = await wardogs_account.get_or_create(
-                session, steam_id=str(steam_id)
+                session,
+                steam_id=str(steam_id),
+                display_name=steam_user_info.get("personaname", ""),
             )
 
             snapshot = await stats_snapshot.create(

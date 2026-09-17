@@ -15,6 +15,7 @@ class Api:
     game_shard_id: str
     auth_base_url: str
     shared_key: str
+    steam_web_api_key: str
 
     @staticmethod
     def from_env(env: Env):
@@ -30,6 +31,7 @@ class Api:
         game_shard_id = env.str("GAME_SHARD_ID", "00000000-0000-0000-0000-000000000001")
         auth_base_url = env.str("AUTH_BASE_URL")
         shared_key = env.str("SHARED_KEY")
+        steam_web_api_key = env.str("STEAM_WEB_API_KEY")
         return Api(
             steam_openid=steam_openid,
             social_host=social_host,
@@ -37,6 +39,7 @@ class Api:
             game_shard_id=game_shard_id,
             auth_base_url=auth_base_url,
             shared_key=shared_key,
+            steam_web_api_key=steam_web_api_key,
         )
 
 
