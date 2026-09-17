@@ -9,6 +9,7 @@ from app.database.connection import Base
 class DiscordUser(Base):
     __tablename__ = "discord_users"
     discord_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    display_name: Mapped[str | None] = mapped_column(nullable=True)
     account_id: Mapped[int] = mapped_column(
         ForeignKey("wardog_accounts.id", ondelete="cascade"), nullable=False
     )

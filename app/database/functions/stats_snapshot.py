@@ -1,10 +1,37 @@
-from sqlalchemy import insert
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.wardogs_models import PlayerStats
+from app.api.wardogs_models import PlayerStats, RoleStats
 from app.database.dto.stats_snapshot import StatsSnapshot
 from app.database.functions import unlocks
+
+
+async def get_latest(session: AsyncSession, account_id: int) -> PlayerStats | None:
+    stmt = (
+        select(StatsSnapshot)
+        .filter(StatsSnapshot.account_id == account_id)
+        .order_by(StatsSnapshot.id.desc())
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    res = result.scalar_one_or_none()
+    if res is None:
+        return None
+
+    cur_unlocks = await unlocks.get(session, account_id)
+
+    return PlayerStats(
+        player_data_version=res.player_data_version,
+        infantry=RoleStats(res.infantry_level, res.infantry_xp),
+        medic=RoleStats(res.medic_level, res.medic_xp),
+        recon=RoleStats(res.recon_level, res.recon_xp),
+        support=RoleStats(res.support_level, res.support_xp),
+        driver=RoleStats(res.driver_level, res.driver_xp),
+        pilot=RoleStats(res.pilot_level, res.pilot_xp),
+        cash=res.cash,
+        gold=res.gold,
+        unlocks=cur_unlocks,
+    )
 
 
 async def create(

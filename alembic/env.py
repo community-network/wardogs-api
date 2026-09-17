@@ -8,7 +8,6 @@ from alembic import context
 from app.config import load_config
 from app.database import connection
 from app.database.dto import (  # noqa: F401
-    discord_user,
     stats_snapshot,
     unlock,
     wardogs_account,

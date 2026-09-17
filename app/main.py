@@ -7,16 +7,16 @@ from fastapi import FastAPI, Query, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import RedirectResponse
 
+from app.api import steam_web_api
 from app.api.steam_login import (
     authenticate_with_openid,
     decode_player_stats,
     get_player_data,
     get_queue_token,
 )
-from app.api import steam_web_api
+from app.config import LogConfig, PackagePathFilter, load_config
 from app.database.connection import DatabaseSingleton
 from app.database.functions import discord_user, stats_snapshot, wardogs_account
-from app.config import LogConfig, PackagePathFilter, load_config
 
 dictConfig(LogConfig().model_dump())
 
