@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from pydantic import computed_field
+
 
 @dataclass
 class RoleStats:
@@ -29,6 +31,7 @@ class PlayerStats:
 
     unlocks: list[UnlockInfo] = field(default_factory=list)
 
+    @computed_field
     @property
     def wardog_level(self) -> int:
         """
