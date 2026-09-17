@@ -13,6 +13,7 @@ class Api:
     social_host: str
     game_host: str
     game_shard_id: str
+    discord_bot_url: str
     auth_base_url: str
     shared_key: str
     steam_web_api_key: str
@@ -29,6 +30,7 @@ class Api:
         game_host = env.str(
             "GAME_HOST", "https://game.live.wardogs.bulkhead.pragmaengine.com"
         )
+        discord_bot_url = env.str("DISCORD_BOT_URL", "http://localhost:8081")
         state_lifetime_seconds = int(env.str("STATE_LIFETIME_SECONDS", "600"))
         game_shard_id = env.str("GAME_SHARD_ID", "00000000-0000-0000-0000-000000000001")
         auth_base_url = env.str("AUTH_BASE_URL")
@@ -39,6 +41,7 @@ class Api:
             social_host=social_host,
             game_host=game_host,
             game_shard_id=game_shard_id,
+            discord_bot_url=discord_bot_url,
             auth_base_url=auth_base_url,
             shared_key=shared_key,
             steam_web_api_key=steam_web_api_key,

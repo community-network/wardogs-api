@@ -3,6 +3,7 @@ from logging.config import dictConfig
 import time
 from urllib.parse import urlencode
 
+import aiohttp
 import jwt
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
@@ -206,6 +207,11 @@ async def callback(
                     state_info["discord_id"],
                     state_info["display_name"],
                 )
+
+                async with aiohttp.ClientSession() as session:
+                    await session.post(
+                        url=f"{env_config.api.discord_bot_url}/notify?state_id={state_info['id']}"
+                    )
 
                 print(
                     f"[OK] Discord {state_info['display_name']} linked to account {account.id}"
