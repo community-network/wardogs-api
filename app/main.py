@@ -46,8 +46,8 @@ async def read_root():
     return response
 
 
-@app.get("/login")
-def login(
+@app.get("/update", summary="Redirects to steam to update the Wardogs stats")
+def update(
     state: str = Query(
         "",
         description="Token containing the discord connection",
@@ -70,7 +70,9 @@ def login(
     return RedirectResponse(f"{env_config.api.steam_openid}?{urlencode(params)}")
 
 
-@app.get("/stats")
+@app.get(
+    "/stats", summary="Get your gathered stats with your, id, steam_id or discord_id"
+)
 async def stats(
     id: int | None = Query(None, description="Id of the user"),
     steam_id: int | None = Query(None, description="Steam id of the user"),
@@ -85,7 +87,10 @@ async def stats(
         return await stats_snapshot.get_latest(session, id, steam_id, discord_id)
 
 
-@app.get("/callback")
+@app.get(
+    "/callback",
+    summary="Handles the callback from steam, logs in to Wardogs and save the gathered stats to the database",
+)
 async def callback(
     request: Request,
     state: str = Query(
