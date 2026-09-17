@@ -1,5 +1,7 @@
-import requests
+import aiohttp
 from typing import TypedDict
+
+from app.api import Singleton
 
 
 class Player(TypedDict):
@@ -22,8 +24,14 @@ class Player(TypedDict):
     loccityid: int
 
 
-async def get_player_summaries(api_key: str, steam_id: str) -> Player:
-    url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={api_key}&steamids={steam_id}"
-    response = requests.get(url)
-    data: dict[str, dict[str, list[Player]]] = response.json()
-    return data.get("response", {}).get("players", [])[0]
+class SteamWebClient(metaclass=Singleton):
+    session: aiohttp.ClientSession
+
+    async def async_init__(self):
+        self.session = aiohttp.ClientSession()
+
+    async def get_player_summaries(self, api_key: str, steam_id: str) -> Player:
+        url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={api_key}&steamids={steam_id}"
+        response = await self.session.get(url)
+        data: dict[str, dict[str, list[Player]]] = await response.json()
+        return data.get("response", {}).get("players", [])[0]

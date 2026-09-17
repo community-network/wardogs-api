@@ -1,210 +1,217 @@
 import base64
 import json
 
-import requests
+import aiohttp
 
+from app.api import Singleton
 from app.api.wardogs_models import PlayerStats, RoleStats, UnlockInfo
 from app.config import Api
 
 
-def get_queue_token(game_host):
-    response = requests.post(
-        f"{game_host}/v1/loginqueue/getinqueuev1",
-        json={},
-        timeout=20,
-    )
+class SteamClient(metaclass=Singleton):
+    session: aiohttp.ClientSession
 
-    response.raise_for_status()
+    async def async_init__(self):
+        self.session = aiohttp.ClientSession()
 
-    data = response.json()
-
-    token = (
-        data.get("loginQueuePassToken") or data.get("passToken") or data.get("token")
-    )
-
-    if not token:
-        raise RuntimeError("WARDOGS returned no login queue token.")
-
-    return token
-
-
-def authenticate_with_openid(
-    api_config: Api,
-    provider_token,
-    queue_token,
-):
-    payload = {
-        "providerId": "STEAM",
-        "providerToken": json.dumps(
-            provider_token,
-            separators=(",", ":"),
-        ),
-        "gameShardId": api_config.game_shard_id,
-        "loginQueuePassToken": queue_token,
-    }
-
-    # Keep this request identical to the version
-    # proven to work in steam_web_test.py.
-    response = requests.post(
-        (f"{api_config.social_host}/v1/account/authenticateorcreatev2"),
-        json=payload,
-        timeout=30,
-    )
-
-    if not response.ok:
-        raise RuntimeError(
-            f"WARDOGS authentication failed (HTTP {response.status_code})."
+    async def get_queue_token(self, game_host):
+        response = await self.session.post(
+            f"{game_host}/v1/loginqueue/getinqueuev1",
+            json={},
+            timeout=aiohttp.ClientTimeout(20),
         )
 
-    data = response.json()
+        response.raise_for_status()
 
-    tokens = data.get("pragmaTokens")
+        data = await response.json()
 
-    if not isinstance(tokens, dict):
-        raise RuntimeError("WARDOGS returned invalid token data.")
-
-    game_token = tokens.get("pragmaGameToken")
-
-    if not game_token:
-        raise RuntimeError("WARDOGS returned no game session.")
-
-    return game_token
-
-
-def get_player_data(game_host, game_token):
-    payload = {
-        "requestId": 1,
-        "type": "PlayerDataServiceRpc.GetV1Request",
-        "payload": {},
-    }
-
-    response = requests.post(
-        f"{game_host}/v1/rpc",
-        json=payload,
-        headers={
-            "Authorization": f"Bearer {game_token}",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        },
-        timeout=30,
-    )
-
-    if not response.ok:
-        raise RuntimeError(
-            f"WARDOGS PlayerData request failed (HTTP {response.status_code})."
+        token = (
+            data.get("loginQueuePassToken")
+            or data.get("passToken")
+            or data.get("token")
         )
 
-    return response.json()
+        if not token:
+            raise RuntimeError("WARDOGS returned no login queue token.")
 
+        return token
 
-def decode_player_stats(data):
-    rpc_response = data.get("response", {})
-    payload = rpc_response.get("payload", {})
-    player_data = payload.get("playerData", {})
+    async def authenticate_with_openid(
+        self,
+        api_config: Api,
+        provider_token,
+        queue_token,
+    ):
+        payload = {
+            "providerId": "STEAM",
+            "providerToken": json.dumps(
+                provider_token,
+                separators=(",", ":"),
+            ),
+            "gameShardId": api_config.game_shard_id,
+            "loginQueuePassToken": queue_token,
+        }
 
-    if not isinstance(player_data, dict):
-        raise RuntimeError("WARDOGS returned invalid PlayerData.")
+        # Keep this request identical to the version
+        # proven to work in steam_web_test.py.
+        response = await self.session.post(
+            (f"{api_config.social_host}/v1/account/authenticateorcreatev2"),
+            json=payload,
+            timeout=aiohttp.ClientTimeout(30),
+        )
 
-    raw_version = player_data.get("version")
-
-    stats = PlayerStats(
-        player_data_version=(int(raw_version) if raw_version is not None else None)
-    )
-
-    entities = player_data.get("entities", [])
-
-    if not isinstance(entities, list):
-        raise RuntimeError("WARDOGS returned invalid entity data.")
-
-    role_map = {
-        "Infantry": "infantry",
-        "Medic": "medic",
-        "Recon": "recon",
-        "Support": "support",
-        "Driver": "driver",
-        "Pilot": "pilot",
-    }
-
-    for entity in entities:
-        components = entity.get("components")
-
-        if components is None:
-            components = [entity]
-
-        if isinstance(components, dict):
-            components = [components]
-
-        if not isinstance(components, list):
-            continue
-
-        for component in components:
-            serialized = component.get(
-                "serializedComponent",
-                {},
+        if not response.ok:
+            raise RuntimeError(
+                f"WARDOGS authentication failed (HTTP {response.status})."
             )
 
-            encoded = serialized.get("bytes")
+        data = await response.json()
 
-            if not encoded:
+        tokens = data.get("pragmaTokens")
+
+        if not isinstance(tokens, dict):
+            raise RuntimeError("WARDOGS returned invalid token data.")
+
+        game_token = tokens.get("pragmaGameToken")
+
+        if not game_token:
+            raise RuntimeError("WARDOGS returned no game session.")
+
+        return game_token
+
+    async def get_player_data(self, game_host, game_token):
+        payload = {
+            "requestId": 1,
+            "type": "PlayerDataServiceRpc.GetV1Request",
+            "payload": {},
+        }
+
+        response = await self.session.post(
+            f"{game_host}/v1/rpc",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {game_token}",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+            timeout=aiohttp.ClientTimeout(30),
+        )
+
+        if not response.ok:
+            raise RuntimeError(
+                f"WARDOGS PlayerData request failed (HTTP {response.status})."
+            )
+
+        return await response.json()
+
+    def decode_player_stats(self, data):
+        rpc_response = data.get("response", {})
+        payload = rpc_response.get("payload", {})
+        player_data = payload.get("playerData", {})
+
+        if not isinstance(player_data, dict):
+            raise RuntimeError("WARDOGS returned invalid PlayerData.")
+
+        raw_version = player_data.get("version")
+
+        stats = PlayerStats(
+            player_data_version=(int(raw_version) if raw_version is not None else None)
+        )
+
+        entities = player_data.get("entities", [])
+
+        if not isinstance(entities, list):
+            raise RuntimeError("WARDOGS returned invalid entity data.")
+
+        role_map = {
+            "Infantry": "infantry",
+            "Medic": "medic",
+            "Recon": "recon",
+            "Support": "support",
+            "Driver": "driver",
+            "Pilot": "pilot",
+        }
+
+        for entity in entities:
+            components = entity.get("components")
+
+            if components is None:
+                components = [entity]
+
+            if isinstance(components, dict):
+                components = [components]
+
+            if not isinstance(components, list):
                 continue
 
-            try:
-                decoded = base64.b64decode(encoded).decode("utf-8")
-
-                obj = json.loads(decoded)
-
-            except Exception:
-                continue
-
-            if not isinstance(obj, dict):
-                continue
-
-            node_id = obj.get("nodeId")
-
-            if node_id:
-                try:
-                    level = int(obj.get("level", 1))
-                except (TypeError, ValueError):
-                    level = 1
-
-                stats.unlocks.append(
-                    UnlockInfo(
-                        node_id=str(node_id),
-                        level=level,
-                    )
+            for component in components:
+                serialized = component.get(
+                    "serializedComponent",
+                    {},
                 )
 
-            attribute_id = obj.get("id")
+                encoded = serialized.get("bytes")
 
-            if attribute_id == "Attribute.Meta.Currency.Cash":
-                stats.cash = int(obj.get("amount", 0))
+                if not encoded:
+                    continue
 
-            elif attribute_id == "Attribute.Meta.Currency.GoldBars":
-                stats.gold = int(obj.get("amount", 0))
+                try:
+                    decoded = base64.b64decode(encoded).decode("utf-8")
 
-            xp_id = obj.get("xpId")
+                    obj = json.loads(decoded)
 
-            if not xp_id:
-                continue
+                except Exception:
+                    continue
 
-            prefix = "Attribute.Meta.XP.Role."
+                if not isinstance(obj, dict):
+                    continue
 
-            if not xp_id.startswith(prefix):
-                continue
+                node_id = obj.get("nodeId")
 
-            role_name = xp_id[len(prefix) :]
-            attribute_name = role_map.get(role_name)
+                if node_id:
+                    try:
+                        level = int(obj.get("level", 1))
+                    except (TypeError, ValueError):
+                        level = 1
 
-            if not attribute_name:
-                continue
+                    stats.unlocks.append(
+                        UnlockInfo(
+                            node_id=str(node_id),
+                            level=level,
+                        )
+                    )
 
-            setattr(
-                stats,
-                attribute_name,
-                RoleStats(
-                    level=int(obj.get("rewardedLevel", 0)),
-                    xp=int(obj.get("amount", 0)),
-                ),
-            )
+                attribute_id = obj.get("id")
 
-    return stats
+                if attribute_id == "Attribute.Meta.Currency.Cash":
+                    stats.cash = int(obj.get("amount", 0))
+
+                elif attribute_id == "Attribute.Meta.Currency.GoldBars":
+                    stats.gold = int(obj.get("amount", 0))
+
+                xp_id = obj.get("xpId")
+
+                if not xp_id:
+                    continue
+
+                prefix = "Attribute.Meta.XP.Role."
+
+                if not xp_id.startswith(prefix):
+                    continue
+
+                role_name = xp_id[len(prefix) :]
+                attribute_name = role_map.get(role_name)
+
+                if not attribute_name:
+                    continue
+
+                setattr(
+                    stats,
+                    attribute_name,
+                    RoleStats(
+                        level=int(obj.get("rewardedLevel", 0)),
+                        xp=int(obj.get("amount", 0)),
+                    ),
+                )
+
+        return stats

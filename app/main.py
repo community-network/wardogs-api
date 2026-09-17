@@ -8,13 +8,8 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import RedirectResponse
 
-from app.api import steam_web_api
-from app.api.steam_login import (
-    authenticate_with_openid,
-    decode_player_stats,
-    get_player_data,
-    get_queue_token,
-)
+from app.api.steam_web_api import SteamWebClient
+from app.api.steam_login import SteamClient
 from app.config import LogConfig, PackagePathFilter, load_config
 from app.database.connection import DatabaseSingleton
 from app.database.functions import discord_user, stats_snapshot, wardogs_account
@@ -29,13 +24,21 @@ env_config = load_config()
 db = DatabaseSingleton(env_config.db)
 
 
+steam_client = SteamClient()
+steam_web_client = SteamWebClient()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init_db()
+    await steam_client.async_init__()
+    await steam_web_client.async_init__()
     logger.info("Startup complete")
     yield
     logger.info("Shutting down...")
     await db.close_async()
+    await steam_client.session.close()
+    await steam_web_client.session.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -165,19 +168,21 @@ async def callback(
             print()
             print(f"[WEB] Updating Steam account {steam_id}")
 
-            queue_token = get_queue_token(env_config.api.game_host)
+            queue_token = await steam_client.get_queue_token(env_config.api.game_host)
 
-            game_token = authenticate_with_openid(
+            game_token = await steam_client.authenticate_with_openid(
                 env_config.api,
                 provider_token,
                 queue_token,
             )
 
-            player_data = get_player_data(env_config.api.game_host, game_token)
+            player_data = await steam_client.get_player_data(
+                env_config.api.game_host, game_token
+            )
 
-            stats = decode_player_stats(player_data)
+            stats = steam_client.decode_player_stats(player_data)
 
-            steam_user_info = await steam_web_api.get_player_summaries(
+            steam_user_info = await steam_web_client.get_player_summaries(
                 env_config.api.steam_web_api_key, steam_id
             )
 
