@@ -16,6 +16,7 @@ class Api:
     auth_base_url: str
     shared_key: str
     steam_web_api_key: str
+    state_lifetime_seconds: int
 
     @staticmethod
     def from_env(env: Env):
@@ -28,6 +29,7 @@ class Api:
         game_host = env.str(
             "GAME_HOST", "https://game.live.wardogs.bulkhead.pragmaengine.com"
         )
+        state_lifetime_seconds = int(env.str("STATE_LIFETIME_SECONDS", "600"))
         game_shard_id = env.str("GAME_SHARD_ID", "00000000-0000-0000-0000-000000000001")
         auth_base_url = env.str("AUTH_BASE_URL")
         shared_key = env.str("SHARED_KEY")
@@ -40,6 +42,7 @@ class Api:
             auth_base_url=auth_base_url,
             shared_key=shared_key,
             steam_web_api_key=steam_web_api_key,
+            state_lifetime_seconds=state_lifetime_seconds,
         )
 
 

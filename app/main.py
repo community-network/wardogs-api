@@ -1,5 +1,6 @@
 import logging
 from logging.config import dictConfig
+import time
 from urllib.parse import urlencode
 
 import jwt
@@ -55,6 +56,14 @@ def update(
 ):
     if state != "":
         state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
+        if (
+            time.time() - state_info["created_at"]
+            > env_config.api.state_lifetime_seconds
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="The given state is invalid or has expired",
+            )
 
     callback = f"{env_config.api.auth_base_url}/callback?" + urlencode({"state": state})
 
@@ -71,7 +80,7 @@ def update(
 
 
 @app.get(
-    "/stats", summary="Get your gathered stats with your, id, steam_id or discord_id"
+    "/stats", summary="Get your gathered stats via your, id, steam_id or discord_id"
 )
 async def stats(
     id: int | None = Query(None, description="Id of the user"),
@@ -101,6 +110,14 @@ async def callback(
     state_info = None
     if state != "":
         state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
+        if (
+            time.time() - state_info["created_at"]
+            > env_config.api.state_lifetime_seconds
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="The given state is invalid or has expired",
+            )
 
     required = [
         "openid.claimed_id",
