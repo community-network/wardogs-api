@@ -174,12 +174,13 @@ async def callback(
             if state_info is not None:
                 await discord_user.upsert(
                     session,
-                    state_info["discord_id"],
                     account.id,
+                    state_info["discord_id"],
+                    state_info["display_name"],
                 )
 
                 print(
-                    f"[OK] Discord {state_info['discord_id']} linked to account {account.id}"
+                    f"[OK] Discord {state_info['display_name']} linked to account {account.id}"
                 )
             print(f"[OK] Snapshot {snapshot.id} saved")
 

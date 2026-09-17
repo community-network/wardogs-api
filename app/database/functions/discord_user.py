@@ -7,10 +7,15 @@ from app.database.dto import DiscordUser
 
 async def upsert(
     session: AsyncSession,
-    discord_id: int,
     account_id: int,
+    discord_id: int,
+    display_name: str | None,
 ):
-    data = {"account_id": account_id, "discord_id": discord_id}
+    data = {
+        "account_id": account_id,
+        "discord_id": discord_id,
+        "display_name": display_name,
+    }
     stmt = insert(DiscordUser).values(data)
     do_update_stmt = stmt.on_conflict_do_update(
         index_elements=[DiscordUser.account_id],
