@@ -1,8 +1,16 @@
-from app.database.dto.wardogs_account import WardogAccount
+from app.database.dto import WardogAccount
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+async def get(
+    session: AsyncSession,
+    steam_id: str,
+) -> WardogAccount | None:
+    stmt = select(WardogAccount).filter(WardogAccount.steam_id == steam_id).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_or_create(
@@ -13,9 +21,7 @@ async def get_or_create(
     display_name: str | None = None,
     discriminator: str | None = None,
 ) -> WardogAccount:
-    stmt = select(WardogAccount).filter(WardogAccount.steam_id == steam_id).limit(1)
-    result = await session.execute(stmt)
-    res = result.scalar_one_or_none()
+    res = await get(session, steam_id)
     if res is None:
         channel = {
             "steam_id": steam_id,

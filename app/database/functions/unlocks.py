@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.wardogs_models import UnlockInfo
-from app.database.dto.unlock import Unlock
+from app.database.dto import Unlock
 
 
 async def get(session: AsyncSession, account_id: int) -> list[UnlockInfo]:

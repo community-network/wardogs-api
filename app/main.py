@@ -3,7 +3,7 @@ from logging.config import dictConfig
 from urllib.parse import urlencode
 
 import jwt
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import RedirectResponse
 
@@ -68,6 +68,21 @@ def login(
     }
 
     return RedirectResponse(f"{env_config.api.steam_openid}?{urlencode(params)}")
+
+
+@app.get("/stats")
+async def stats(
+    id: int | None = Query(None, description="Id of the user"),
+    steam_id: int | None = Query(None, description="Steam id of the user"),
+    discord_id: int | None = Query(None, description="Discord id of the user"),
+):
+    if id is None and steam_id is None and discord_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="You need to send the id, steam_id or discord_id of a user",
+        )
+    async with db.create_session() as session:
+        return await stats_snapshot.get_latest(session, id, steam_id, discord_id)
 
 
 @app.get("/callback")

@@ -2,23 +2,30 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.wardogs_models import PlayerStats, RoleStats
-from app.database.dto.stats_snapshot import StatsSnapshot
+from app.database.dto import StatsSnapshot, WardogAccount
 from app.database.functions import unlocks
 
 
-async def get_latest(session: AsyncSession, account_id: int) -> PlayerStats | None:
-    stmt = (
-        select(StatsSnapshot)
-        .filter(StatsSnapshot.account_id == account_id)
-        .order_by(StatsSnapshot.id.desc())
-        .limit(1)
-    )
+async def get_latest(
+    session: AsyncSession,
+    account_id: int | None,
+    steam_id: int | None,
+    discord_id: int | None,
+) -> PlayerStats | None:
+    stmt = select(StatsSnapshot)
+    if account_id is not None:
+        stmt = stmt.filter(StatsSnapshot.account_id == account_id)
+    elif steam_id is not None:
+        stmt = stmt.filter(WardogAccount.steam_id == str(steam_id))
+    elif discord_id is not None:
+        pass
+    stmt = stmt.order_by(StatsSnapshot.id.desc()).limit(1)
     result = await session.execute(stmt)
     res = result.scalar_one_or_none()
     if res is None:
         return None
 
-    cur_unlocks = await unlocks.get(session, account_id)
+    cur_unlocks = await unlocks.get(session, res.account_id)
 
     return PlayerStats(
         player_data_version=res.player_data_version,

@@ -2,7 +2,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.dto.discord_user import DiscordUser
+from app.database.dto import DiscordUser
 
 
 async def upsert(
