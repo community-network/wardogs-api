@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 
 from app.api.steam_web_api import SteamWebClient
 from app.api.steam_login import SteamClient
+from app.api.wardogs_models import PlayerStats
 from app.config import LogConfig, PackagePathFilter, load_config
 from app.database.connection import DatabaseSingleton
 from app.database.functions import discord_user, stats_snapshot, wardogs_account
@@ -89,7 +90,7 @@ async def stats(
     id: int | None = Query(None, description="Id of the user"),
     steam_id: int | None = Query(None, description="Steam id of the user"),
     discord_id: int | None = Query(None, description="Discord id of the user"),
-):
+) -> PlayerStats | None:
     if id is None and steam_id is None and discord_id is None:
         raise HTTPException(
             status_code=400,
