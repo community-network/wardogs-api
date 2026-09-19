@@ -1,8 +1,8 @@
 import logging
 from logging.config import dictConfig
 import time
+import urllib.parse as urlparse
 from urllib.parse import urlencode
-
 import aiohttp
 import jwt
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -235,25 +235,14 @@ async def callback(
     except Exception as exc:
         logger.error(f"Web update failed: {type(exc).__name__}: {exc}")
 
-        return HTMLResponse(
-            content="""
-        <!doctype html>
-        <html>
-        <head>
-            <title>WARDOGS Update Failed</title>
-        </head>
-        <body>
-            <h2>WARDOGS stats update failed</h2>
+        if redirect_url != "":
+            url_parts = list(urlparse.urlparse(redirect_url))
+            query = dict(urlparse.parse_qsl(url_parts[4]))
+            query.update({"error": "Wardogs stats update failed"})
+            url_parts[4] = urlencode(query)
+            return RedirectResponse(urlparse.urlunparse(url_parts))
 
-            <p>
-                No account changes were made.
-                Return to the previous page and try again.
-            </p>
-        </body>
-        </html>
-        """,
-            status_code=500,
-        )
+        return {"error": "Wardogs stats update failed"}
 
     finally:
         game_token = None
