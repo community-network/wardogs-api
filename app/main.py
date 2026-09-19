@@ -118,7 +118,8 @@ async def callback(
         description="Token containing the discord connection",
     ),
     redirect_url: str = Query(
-        "", description="Url to return to after the process is complete"
+        "",
+        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" failure',
     ),
 ):
     state_info = None
