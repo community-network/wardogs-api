@@ -7,7 +7,7 @@ import aiohttp
 import jwt
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.api.steam_web_api import SteamWebClient
 from app.api.steam_login import SteamClient
@@ -58,6 +58,9 @@ def update(
         "",
         description="Token containing the discord connection",
     ),
+    redirect_url: str = Query(
+        "", description="Url to return to after the process is complete"
+    ),
 ):
     if state != "":
         state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
@@ -70,7 +73,9 @@ def update(
                 detail="The given state is invalid or has expired",
             )
 
-    callback = f"{env_config.api.auth_base_url}/callback?" + urlencode({"state": state})
+    callback = f"{env_config.api.auth_base_url}/callback?" + urlencode(
+        {"state": state, "redirect_url": redirect_url}
+    )
 
     params = {
         "openid.ns": "http://specs.openid.net/auth/2.0",
@@ -110,6 +115,9 @@ async def callback(
     state: str = Query(
         "",
         description="Token containing the discord connection",
+    ),
+    redirect_url: str = Query(
+        "", description="Url to return to after the process is complete"
     ),
 ):
     state_info = None
@@ -217,48 +225,18 @@ async def callback(
                 )
             logger.info(f"Snapshot {snapshot.id} saved")
 
-            return f"""
-            <!doctype html>
-            <html>
-            <head>
-                <title>WARDOGS Stats Updated</title>
-            </head>
-            <body>
-                <h2>WARDOGS stats updated successfully</h2>
+            if redirect_url != "":
+                return RedirectResponse(redirect_url)
 
-                <p>
-                    Wardog Level:
-                    <strong>{stats.wardog_level}</strong>
-                </p>
-
-                <p>
-                    Cash:
-                    <strong>{stats.cash:,}</strong>
-                </p>
-
-                <p>
-                    Unlocks:
-                    <strong>{len(stats.unlocks)}</strong>
-                </p>
-
-                <p>
-                    Your WARDOGS account is now linked
-                    to your Discord account.
-                </p>
-
-                <p>
-                    You can close this page and return
-                    to Discord.
-                </p>
-            </body>
-            </html>
-            """
+            return RedirectResponse(
+                f"{env_config.api.auth_base_url}/stats?" + urlencode({"id": account.id})
+            )
 
     except Exception as exc:
         logger.error(f"Web update failed: {type(exc).__name__}: {exc}")
 
-        return (
-            """
+        return HTMLResponse(
+            content="""
         <!doctype html>
         <html>
         <head>
@@ -269,12 +247,12 @@ async def callback(
 
             <p>
                 No account changes were made.
-                Return to Discord and try again.
+                Return to the previous page and try again.
             </p>
         </body>
         </html>
         """,
-            500,
+            status_code=500,
         )
 
     finally:
