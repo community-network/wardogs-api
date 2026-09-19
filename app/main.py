@@ -7,7 +7,7 @@ import aiohttp
 import jwt
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 
 from app.api.steam_web_api import SteamWebClient
 from app.api.steam_login import SteamClient
@@ -59,7 +59,8 @@ def update(
         description="Token containing the discord connection",
     ),
     redirect_url: str = Query(
-        "", description="Url to return to after the process is complete"
+        "",
+        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" failure',
     ),
 ):
     if state != "":
@@ -226,7 +227,11 @@ async def callback(
             logger.info(f"Snapshot {snapshot.id} saved")
 
             if redirect_url != "":
-                return RedirectResponse(redirect_url)
+                url_parts = list(urlparse.urlparse(redirect_url))
+                query = dict(urlparse.parse_qsl(url_parts[4]))
+                query.update({"id": f"{account.id}", "steam_id": steam_id})
+                url_parts[4] = urlencode(query)
+                return RedirectResponse(urlparse.urlunparse(url_parts))
 
             return RedirectResponse(
                 f"{env_config.api.auth_base_url}/stats?" + urlencode({"id": account.id})
