@@ -60,7 +60,7 @@ def update(
     ),
     redirect_url: str = Query(
         "",
-        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" failure',
+        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" on failure',
     ),
 ):
     if state != "":
@@ -119,7 +119,7 @@ async def callback(
     ),
     redirect_url: str = Query(
         "",
-        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" failure',
+        description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" on failure',
     ),
 ):
     state_info = None
