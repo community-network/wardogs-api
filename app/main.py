@@ -63,15 +63,23 @@ def update(
         description='Url to return to after the process is complete, it adds "id" and "steam_id" to the url on success, and "error" on failure',
     ),
 ):
+    state_info = None
     if state != "":
-        state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
+        try:
+            state_info = jwt.decode(
+                state, env_config.api.shared_key, algorithms="HS256"
+            )
+        except jwt.exceptions.DecodeError:
+            return return_error(
+                redirect_url, "The given state is invalid or has expired", 403
+            )
+
         if (
             time.time() - state_info["created_at"]
             > env_config.api.state_lifetime_seconds
         ):
-            raise HTTPException(
-                status_code=403,
-                detail="The given state is invalid or has expired",
+            return return_error(
+                redirect_url, "The given state is invalid or has expired", 403
             )
 
     callback = f"{env_config.api.auth_base_url}/callback?" + urlencode(
@@ -107,6 +115,20 @@ async def stats(
         return await stats_snapshot.get_latest(session, id, steam_id, discord_id)
 
 
+def return_error(redirect_url: str, error: str, status_code: int):
+    if redirect_url != "":
+        url_parts = list(urlparse.urlparse(redirect_url))
+        query = dict(urlparse.parse_qsl(url_parts[4]))
+        query.update({"error": error})
+        url_parts[4] = urlencode(query)
+        return RedirectResponse(urlparse.urlunparse(url_parts))
+
+    raise HTTPException(
+        status_code=status_code,
+        detail=error,
+    )
+
+
 @app.get(
     "/callback",
     summary="Handles the callback from steam, logs in to Wardogs and save the gathered stats to the database",
@@ -124,14 +146,21 @@ async def callback(
 ):
     state_info = None
     if state != "":
-        state_info = jwt.decode(state, env_config.api.shared_key, algorithms="HS256")
+        try:
+            state_info = jwt.decode(
+                state, env_config.api.shared_key, algorithms="HS256"
+            )
+        except jwt.exceptions.DecodeError:
+            return return_error(
+                redirect_url, "The given state is invalid or has expired", 403
+            )
+
         if (
             time.time() - state_info["created_at"]
             > env_config.api.state_lifetime_seconds
         ):
-            raise HTTPException(
-                status_code=403,
-                detail="The given state is invalid or has expired",
+            return return_error(
+                redirect_url, "The given state is invalid or has expired", 403
             )
 
     required = [
@@ -148,9 +177,8 @@ async def callback(
     ]
 
     if any(name not in request.query_params for name in required):
-        return (
-            "<h2>Steam returned an incomplete authentication response.</h2>",
-            400,
+        return return_error(
+            redirect_url, "Steam returned an incomplete authentication response.", 400
         )
 
     claimed_id = request.query_params["openid.claimed_id"]
@@ -158,7 +186,7 @@ async def callback(
     steam_id = claimed_id.rstrip("/").split("/")[-1]
 
     if not steam_id.isdigit() or len(steam_id) < 16:
-        return "<h2>Invalid Steam account.</h2>", 400
+        return return_error(redirect_url, "Invalid Steam account.", 400)
 
     provider_token = {
         "claimedId": request.query_params["openid.claimed_id"],
@@ -241,14 +269,7 @@ async def callback(
     except Exception as exc:
         logger.error(f"Web update failed: {type(exc).__name__}: {exc}")
 
-        if redirect_url != "":
-            url_parts = list(urlparse.urlparse(redirect_url))
-            query = dict(urlparse.parse_qsl(url_parts[4]))
-            query.update({"error": "Wardogs stats update failed"})
-            url_parts[4] = urlencode(query)
-            return RedirectResponse(urlparse.urlunparse(url_parts))
-
-        return {"error": "Wardogs stats update failed"}
+        return return_error(redirect_url, "Wardogs stats update failed", 500)
 
     finally:
         game_token = None
