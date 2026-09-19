@@ -167,8 +167,7 @@ async def callback(
 
     try:
         async with db.create_session() as session:
-            print()
-            print(f"[WEB] Updating Steam account {steam_id}")
+            logger.info(f"[WEB] Updating Steam account {steam_id}")
 
             queue_token = await steam_client.get_queue_token(env_config.api.game_host)
 
@@ -213,10 +212,10 @@ async def callback(
                         url=f"{env_config.api.discord_bot_url}/notify?state_id={state_info['id']}"
                     )
 
-                print(
-                    f"[OK] Discord {state_info['display_name']} linked to account {account.id}"
+                logger.info(
+                    f"Discord {state_info['display_name']} linked to account {account.id}"
                 )
-            print(f"[OK] Snapshot {snapshot.id} saved")
+            logger.info(f"Snapshot {snapshot.id} saved")
 
             return f"""
             <!doctype html>
@@ -256,7 +255,7 @@ async def callback(
             """
 
     except Exception as exc:
-        print(f"[ERROR] Web update failed: {type(exc).__name__}: {exc}")
+        logger.error(f"Web update failed: {type(exc).__name__}: {exc}")
 
         return (
             """
