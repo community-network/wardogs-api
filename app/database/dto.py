@@ -6,6 +6,41 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class DiscordRoleGroup(Base):
+    __tablename__ = "discord_role_groups"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str]
+    discord_roles: Mapped[list["DiscordRole"]] = relationship(
+        "DiscordRole", back_populates="account"
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DiscordRole(Base):
+    __tablename__ = "discord_roles"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    discord_role_group_id: Mapped[int] = mapped_column(
+        ForeignKey("discord_role_groups.id", ondelete="cascade"),
+        nullable=False,
+        primary_key=True,
+    )
+    name: Mapped[str]
+    tracked_item: Mapped[str]
+    role_range_min: Mapped[int]
+    role_range_max: Mapped[int]
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class WardogAccount(Base):
     __tablename__ = "wardog_accounts"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
