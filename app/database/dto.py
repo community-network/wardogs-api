@@ -83,7 +83,7 @@ class Unlock(Base):
         "WardogAccount",
         back_populates="unlocks",
     )
-    node_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    node_id: Mapped[str] = mapped_column(primary_key=True)
     level: Mapped[int] = mapped_column(BigInteger)
 
     created_at: Mapped[datetime.datetime] = mapped_column(
