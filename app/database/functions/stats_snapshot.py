@@ -16,9 +16,15 @@ async def get_latest(
     if account_id is not None:
         stmt = stmt.filter(StatsSnapshot.account_id == account_id)
     elif steam_id is not None:
-        stmt = stmt.filter(WardogAccount.steam_id == str(steam_id))
+        stmt = stmt.filter(
+            StatsSnapshot.account.has(WardogAccount.steam_id == str(steam_id))
+        )
     elif discord_id is not None:
-        stmt = stmt.filter(DiscordUser.discord_id == discord_id)
+        stmt = stmt.filter(
+            StatsSnapshot.account.has(
+                WardogAccount.discord_users.any(DiscordUser.discord_id == discord_id)
+            )
+        )
     stmt = stmt.order_by(StatsSnapshot.id.desc()).limit(1)
     result = await session.execute(stmt)
     res = result.scalar_one_or_none()
