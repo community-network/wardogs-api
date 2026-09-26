@@ -5,6 +5,7 @@ import urllib.parse as urlparse
 from urllib.parse import urlencode
 import aiohttp
 import jwt
+import traceback
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import RedirectResponse
@@ -267,7 +268,9 @@ async def callback(
             )
 
     except Exception as exc:
-        logger.error(f"Web update failed: {type(exc).__name__}: {exc}")
+        logger.error(
+            f"Web update failed: {type(exc).__name__}: {exc}", traceback.format_exc()
+        )
 
         return return_error(redirect_url, "Wardogs stats update failed", 500)
 
