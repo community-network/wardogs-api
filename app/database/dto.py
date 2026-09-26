@@ -11,7 +11,7 @@ class DiscordRoleGroup(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str]
     discord_roles: Mapped[list["DiscordRole"]] = relationship(
-        "DiscordRole", back_populates="account"
+        "DiscordRole", back_populates="discord_role_group"
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -28,6 +28,10 @@ class DiscordRole(Base):
         ForeignKey("discord_role_groups.id", ondelete="cascade"),
         nullable=False,
         primary_key=True,
+    )
+    discord_role_group: Mapped["DiscordRoleGroup"] = relationship(
+        "DiscordRoleGroup",
+        back_populates="discord_roles",
     )
     name: Mapped[str]
     tracked_item: Mapped[str]
