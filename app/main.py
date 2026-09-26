@@ -113,7 +113,13 @@ async def stats(
             detail="You need to send the id, steam_id or discord_id of a user",
         )
     async with db.create_session() as session:
-        return await stats_snapshot.get_latest(session, id, steam_id, discord_id)
+        res = await stats_snapshot.get_latest(session, id, steam_id, discord_id)
+        if res is None:
+            raise HTTPException(
+                status_code=404,
+                detail="No stats found for the requested user",
+            )
+        return res
 
 
 def return_error(redirect_url: str, error: str, status_code: int):
