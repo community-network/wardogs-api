@@ -23,7 +23,7 @@ async def upsert(
     do_update_stmt = stmt.on_conflict_do_update(
         index_elements=[Unlock.account_id, Unlock.node_id],
         set_={k: v for (k, v) in data.items() if k != "created_at"},
-    )
+    ).returning(Unlock)
 
     try:
         result = await session.execute(do_update_stmt)
