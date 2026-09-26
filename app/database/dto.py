@@ -6,9 +6,26 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class ServerSetting(Base):
+    __tablename__ = "server_settings"
+    server_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    server_name: Mapped[str]
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class DiscordRoleGroup(Base):
     __tablename__ = "discord_role_groups"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    guild_id: Mapped[int] = mapped_column(
+        ForeignKey("server_settings.server_id", ondelete="cascade"),
+        nullable=False,
+        primary_key=True,
+    )
     name: Mapped[str]
     discord_roles: Mapped[list["DiscordRole"]] = relationship(
         "DiscordRole", back_populates="discord_role_group", cascade="all, delete-orphan"
