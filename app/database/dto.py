@@ -11,7 +11,7 @@ class DiscordRoleGroup(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str]
     discord_roles: Mapped[list["DiscordRole"]] = relationship(
-        "DiscordRole", back_populates="discord_role_group"
+        "DiscordRole", back_populates="discord_role_group", cascade="all, delete-orphan"
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
